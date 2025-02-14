@@ -29,6 +29,7 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <std_srvs/SetBool.h>
 
 #include <opencv2/core/core.hpp>
 #include "../../../../include/System.h"
@@ -67,6 +68,9 @@ public:
 #endif
     }
 
+    bool HandlePauseRequest(std_srvs::SetBool::Request&  req,
+                            std_srvs::SetBool::Response& res);
+
     void GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const sensor_msgs::ImageConstPtr& msgRight);
     
     void GrabOdom(const nav_msgs::Odometry::ConstPtr& msg);
@@ -81,6 +85,10 @@ public:
     
     double timeStamp;
     cv::Mat Tmat;
+
+    ros::ServiceServer service;
+    bool paused = false;
+
 
     ros::Publisher mpCameraPosePublisher, mpCameraPoseInIMUPublisher;
     //    ros::Publisher mpDensePathPub;
@@ -263,14 +271,19 @@ int main(int argc, char **argv)
     sync.registerCallback(boost::bind(&ImageGrabber::GrabStereo, &igb, _1, _2));
     
     //
-    // ros::Subscriber sub = nh.subscribe("/odom", 100, &ImageGrabber::GrabOdom, &igb);
-    ros::Subscriber sub = nh.subscribe("/desired_path", 100, &ImageGrabber::GrabPath, &igb);
+    ros::Subscriber sub = nh.subscribe("/odom", 100, &ImageGrabber::GrabOdom, &igb);
+    // ros::Subscriber sub = nh.subscribe("/desired_path", 100, &ImageGrabber::GrabPath, &igb);
     //    igb.mpDensePathPub = nh.advertise<nav_msgs::Path>("/dense_path", 100);
     
     // TODO
     // figure out the proper queue size
     igb.mpCameraPosePublisher = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("ORB_SLAM/camera_pose", 100);
     igb.mpCameraPoseInIMUPublisher = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>("ORB_SLAM/camera_pose_in_imu", 100);
+
+    // Service to pause the node.
+    igb.service = nh.advertiseService("/pause_slam", &ImageGrabber::HandlePauseRequest, &igb);
+    igb.paused = false;
+
 
     if (igb.enable_map_to_odom_tf)
     {
@@ -333,6 +346,13 @@ int main(int argc, char **argv)
     return 0;
 }
 
+bool ImageGrabber::HandlePauseRequest(std_srvs::SetBool::Request&  req,
+                                      std_srvs::SetBool::Response& res) {
+    paused      = req.data;
+    res.success = true;
+    res.message = paused ? "GFGG Paused" : "GFGG Resumed";
+    return true;
+}
 
 void ImageGrabber::GrabOdom(const nav_msgs::Odometry::ConstPtr& msg) {
     /*
@@ -408,6 +428,11 @@ void ImageGrabber::GrabStereo(const sensor_msgs::ImageConstPtr& msgLeft,const se
         return;
     }
 #endif
+
+    if (paused) {
+        ROS_WARN_STREAM("GFGG has paused, waiting to resume.");
+        return;
+    }
 
 double latency_trans = ros::Time::now().toSec() - msgLeft->header.stamp.toSec();
 // ROS_INFO("ORB-SLAM Initial Latency: %.03f sec", ros::Time::now().toSec() - msgLeft->header.stamp.toSec());

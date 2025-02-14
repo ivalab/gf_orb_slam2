@@ -378,6 +378,19 @@ R_bias.copyTo(mT_bias.rowRange(0,3).colRange(0,3));
 
     Tb2c = Tc2b.inv();
 #endif
+
+#if defined PRED_WITH_ODOM
+
+    Tc2b = cv::Mat::eye(4, 4, CV_32F);
+    cv::Mat Rmat(3,3,CV_32F);
+    QUAT2DCM_float(-0.500, 0.500, -0.500, 0.500, Rmat);
+    Rmat.copyTo(Tc2b.rowRange(0,3).colRange(0,3));
+    Tc2b.at<float>(0,3) = 0.150;
+    Tc2b.at<float>(1,3) = -0.013;
+    Tc2b.at<float>(2,3) = 0.310;
+    Tb2c = Tc2b.inv();
+
+#endif
     
 
 #if defined DELAYED_MAP_MATCHING && defined LOCAL_SEARCH_USING_HASHING
@@ -1771,7 +1784,7 @@ bool Tracking::PredictRelMotionFromBuffer(const double & time_prev, const double
 //    cout << "previous time: " << time_prev << " vs. " << mvOdomBuf.back().time_stamp << endl;
 
     int Nodom = mvOdomBuf.size();
-    std::cout << "mOdomTrackIdx = " << mOdomTrackIdx << "; Nodom = " << Nodom << std::endl;
+    // std::cout << "mOdomTrackIdx = " << mOdomTrackIdx << "; Nodom = " << Nodom << std::endl;
     if (mOdomTrackIdx < 0 || mOdomTrackIdx >= Nodom)
         return false;
 
@@ -1853,14 +1866,15 @@ bool Tracking::TrackWithMotionModel()
                                              mCurrentFrame.mTimeStamp,
                                              mVelocity_tmp)) {
                 // add body to camera transform
-                mVelocity_tmp = (Tb2c * mVelocity_tmp * Tc2b);
+                mVelocity = (Tb2c * mVelocity_tmp * Tc2b);
 #else
             if (PredictRelMotionFromBuffer(mLastFrame.mTimeStamp,
                                            mCurrentFrame.mTimeStamp,
                                            mVelocity_tmp)) {
 #endif
                 // cout << "mVelocity_tmp = " << endl << mVelocity_tmp << endl;
-                mVelocity = mVelocity_tmp;
+                mVelocity = (Tb2c * mVelocity_tmp * Tc2b);
+                // mVelocity = mVelocity_tmp;
             }
             else {
                 // do nothing

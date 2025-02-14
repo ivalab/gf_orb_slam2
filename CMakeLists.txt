@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(gf_orb_slam2)
 
-option(ENABLE_CLOSED_LOOP "Build Closed-Loop" OFF)
+option(ENABLE_CLOSED_LOOP "Build Closed-Loop" ON)
 
 find_package(catkin REQUIRED COMPONENTS
     rospy
