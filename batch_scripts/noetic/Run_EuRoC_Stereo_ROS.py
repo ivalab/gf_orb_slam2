@@ -38,7 +38,7 @@ MODE_AND_FEATURES = {
     "gfgg": [200, 400],
 }
 
-method_name = "gfgg"
+method_name = "gf"
 
 # Result_root = os.path.join(os.environ["SLAM_RESULT"], "gf_orb_slam2/EuRoC/GFGG/")
 Result_root = f"/mnt/DATA/experiments/openloop/euroc/{method_name}/opencv"
@@ -46,7 +46,7 @@ Result_root = f"/mnt/DATA/experiments/openloop/euroc/{method_name}/opencv"
 
 # Number_GF_List = [400, 800, 1000, 1500]
 Number_GF_List = MODE_AND_FEATURES[method_name]  # , 400, 500]
-NumRepeating = 5  # 10 # 20 #  5 #
+NumRepeating = 10  # 10 # 20 #  5 #
 SpeedPool = [1.0, 2.0, 3.0, 4.0, 5.0]  # x
 SleepTime = 1  # 10 # 25
 EnableViewer = 0

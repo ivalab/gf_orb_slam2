@@ -21,6 +21,7 @@
 #include "Frame.h"
 #include "Converter.h"
 #include "ORBmatcher.h"
+#include "slam_utility/io.h"
 #include <thread>
 
 namespace ORB_SLAM2
@@ -81,10 +82,35 @@ Frame::Frame(const cv::Mat &imLeft, const cv::Mat &imRight, const double &timeSt
     mvInvLevelSigma2 = mpORBextractorLeft->GetInverseScaleSigmaSquares();
 
     // ORB extraction
-    std::thread threadLeft(&Frame::ExtractORB,this,0,imLeft);
-    std::thread threadRight(&Frame::ExtractORB,this,1,imRight);
-    threadLeft.join();
-    threadRight.join();
+    // std::thread threadLeft(&Frame::ExtractORB,this,0,imLeft);
+    // std::thread threadRight(&Frame::ExtractORB,this,1,imRight);
+    // threadLeft.join();
+    // threadRight.join();
+    if (true) {
+        thread threadLeft(&ORBextractor::ComputePyramid,
+                          this->mpORBextractorLeft, imLeft);
+        thread threadRight(&ORBextractor::ComputePyramid,
+                           this->mpORBextractorRight, imRight);
+        threadLeft.join();
+        threadRight.join();
+        // load feature points
+        bool flag = FeatureIO::loadFeaturePoints(
+            mTimeStamp, mvKeys, mDescriptors, mvKeysRight, mDescriptorsRight);
+        std::cout << "load feature" << std::endl;
+        if (!flag) {
+            std::cout << "Could not load feature for frame: "
+                      << std::setprecision(20) << mTimeStamp << "\n";
+            return;
+        }
+    } else {
+        std::thread threadLeft(&Frame::ExtractORB, this, 0, imLeft);
+        std::thread threadRight(&Frame::ExtractORB, this, 1, imRight);
+        threadLeft.join();
+        threadRight.join();
+        // save feature points
+        FeatureIO::saveFeaturePoints(mTimeStamp, mvKeys, mDescriptors,
+                                     mvKeysRight, mDescriptorsRight);
+    }
 
     N = mvKeys.size();
 

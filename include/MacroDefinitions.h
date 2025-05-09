@@ -18,7 +18,7 @@
 //######################### MODE definition. #################################//
 
 // {GF_GG_MODE, GF_CV_MODE, CF_SW_MODE, GF_MODE, ORB2_BASELINE, GF_GG_ANTIC_MODE}
-#define GF_GG_MODE
+#define GF_MODE
 
 //########################### Relocalization. ################################//
 
